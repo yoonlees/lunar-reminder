@@ -8,8 +8,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const dateParam = urlParams.get('date'); // YYYY-MM-DD
 
     if (!dateParam) {
-        alert('No date specified!');
-        window.location.href = 'index.html';
+        document.body.innerHTML = `
+            <div style="color: white; padding: 20px; font-family: sans-serif;">
+                <h1>Error: No date specified</h1>
+                <p>Current URL: ${window.location.href}</p>
+                <p>Search Params: ${window.location.search}</p>
+                <a href="index.html" style="color: #FF6B6B;">Return to Calendar</a>
+            </div>
+        `;
         return;
     }
 
