@@ -142,6 +142,87 @@ h1 {
         padding: 0.5rem;
     }
 
+    /* Note Page Styles */
+    .note-container {
+        max-width: 600px;
+    }
+
+    .note-main {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    #noteInput {
+        width: 100%;
+        height: 300px;
+        padding: 1rem;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-color);
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.1rem;
+        resize: none;
+        box-sizing: border-box;
+        outline: none;
+    }
+
+    #noteInput:focus {
+        border-color: var(--accent-color);
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .primary-btn {
+        background: var(--accent-color);
+        color: white;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.1s;
+        font-weight: 700;
+    }
+
+    .primary-btn:hover {
+        background: #FF6B6B;
+        /* Slightly lighter red */
+        transform: translateY(-2px);
+    }
+
+    .primary-btn:active {
+        transform: translateY(0);
+    }
+
+    .back-btn {
+        text-decoration: none;
+        font-size: 1rem;
+    }
+
+    /* Clickable Day Styles */
+    .day:not(.empty) {
+        cursor: pointer;
+        transition: transform 0.2s, background 0.2s;
+    }
+
+    .day:not(.empty):hover {
+        transform: scale(1.05);
+        background: rgba(255, 255, 255, 0.1);
+        z-index: 10;
+    }
+
+    .has-note::after {
+        content: '';
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        width: 8px;
+        height: 8px;
+        background-color: var(--accent-color);
+        border-radius: 50%;
+    }
+
     .solar-date {
         font-size: 1.25rem;
     }

@@ -43,6 +43,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 dayEl.classList.add('today');
             }
 
+            // Check for note
+            // Format YYYY-MM-DD
+            const monthStr = (month + 1).toString().padStart(2, '0');
+            const dayStr = d.toString().padStart(2, '0');
+            const dateStr = `${year}-${monthStr}-${dayStr}`;
+
+            if (localStorage.getItem(`note_${dateStr}`)) {
+                dayEl.classList.add('has-note');
+            }
+
+            // Click event
+            dayEl.addEventListener('click', () => {
+                window.location.href = `note.html?date=${dateStr}`;
+            });
+
             let lunarInfoHtml = `<span class="lunar-date">${lunarDateStr}</span>`;
             if (term) {
                 lunarInfoHtml = `<span class="term">${term}</span>` + lunarInfoHtml;
