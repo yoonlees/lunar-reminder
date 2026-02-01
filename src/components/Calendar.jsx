@@ -144,12 +144,14 @@ export default function Calendar() {
                 <div className="order-1 sm:order-2 self-end sm:self-auto">
                     {user ? (
                         <div className="flex items-center gap-3">
-                            <span className="text-sm text-gray-600 hidden sm:inline">{user.email}</span>
+                            <span className="text-sm text-gray-600 hidden sm:inline">
+                                안녕하세요, {user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님
+                            </span>
                             <button
                                 onClick={signOut}
                                 className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
                             >
-                                Sign Out
+                                로그아웃
                             </button>
                         </div>
                     ) : (
@@ -157,7 +159,7 @@ export default function Calendar() {
                             onClick={signInWithGoogle}
                             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm"
                         >
-                            Sign in with Google
+                            Google로 로그인
                         </button>
                     )}
                 </div>
