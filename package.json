@@ -1,12 +1,25 @@
 {
-  "name": "lunar_reminder",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "temp_app",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": ""
+  "dependencies": {
+    "@supabase/supabase-js": "^2.93.3",
+    "korean-lunar-calendar": "^0.3.6",
+    "lunar-javascript": "^1.7.7",
+    "next": "16.1.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "tailwindcss": "^4"
+  }
 }

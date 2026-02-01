@@ -1,10 +1,51 @@
-document.addEventListener('DOMContentLoaded', () => {
+import { signInWithGoogle, signOut, getCurrentUser, supabase } from './supabase-client.js';
+
+document.addEventListener('DOMContentLoaded', async () => {
     let currentDate = new Date();
 
     const monthYearDisplay = document.getElementById('monthYearDisplay');
     const calendarGrid = document.getElementById('calendarGrid');
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
+
+    // Auth Elements
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const userInfo = document.getElementById('userInfo');
+    const userEmail = document.getElementById('userEmail');
+    const authContainer = document.getElementById('authContainer');
+
+    // Auth State Management
+    function updateAuthUI(user) {
+        if (user) {
+            loginBtn.style.display = 'none';
+            userInfo.style.display = 'flex';
+            userEmail.textContent = user.email;
+        } else {
+            loginBtn.style.display = 'block';
+            userInfo.style.display = 'none';
+            userEmail.textContent = '';
+        }
+    }
+
+    // Initialize Auth
+    const user = await getCurrentUser();
+    updateAuthUI(user);
+
+    // Auth Event Listeners
+    loginBtn.addEventListener('click', async () => {
+        await signInWithGoogle();
+    });
+
+    logoutBtn.addEventListener('click', async () => {
+        await signOut();
+        updateAuthUI(null);
+    });
+
+    // Listen for auth state changes
+    supabase.auth.onAuthStateChange((event, session) => {
+        updateAuthUI(session?.user ?? null);
+    });
 
     function renderCalendar(date) {
         // Clear previous days (keep weekdays)

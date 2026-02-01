@@ -15,6 +15,13 @@
             <button id="prevBtn" class="nav-btn">&lt;</button>
             <h1 id="monthYearDisplay"></h1>
             <button id="nextBtn" class="nav-btn">&gt;</button>
+            <div id="authContainer" class="auth-container">
+                <button id="loginBtn" class="auth-btn">Sign in with Google</button>
+                <div id="userInfo" class="user-info" style="display: none;">
+                    <span id="userEmail"></span>
+                    <button id="logoutBtn" class="auth-btn">Sign Out</button>
+                </div>
+            </div>
         </header>
 
         <div class="calendar-grid" id="calendarGrid">
@@ -30,7 +37,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js"></script>
-    <script src="script.js?v=2"></script>
+    <script type="module" src="script.js?v=2"></script>
 </body>
 
 </html>

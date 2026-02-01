@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --bg-color: #f0f4f8;
+    --card-bg: #ffffff;
+    --text-primary: #1f2937;
+    --text-secondary: #6b7280;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --today-bg: #eff6ff;
+    --today-border: #3b82f6;
+    --term-color: #ef4444;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1rem;
+}
+
+/* Custom Day Styles */
+.day-card {
+    aspect-ratio: 1;
+    background: var(--card-bg);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.day-card:hover:not(.empty) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.day-card.today {
+    background: var(--today-bg);
+    border: 2px solid var(--today-border);
+}
+
+.has-note::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    background-color: var(--term-color);
+    /* Using term/red color for note indicator */
+    border-radius: 50%;
+}
