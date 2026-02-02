@@ -17,6 +17,9 @@ export default function Calendar() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [days, setDays] = useState([]);
     const [user, setUser] = useState(null);
+    const [checkoutLoading, setCheckoutLoading] = useState(false);
+    const [checkoutMessage, setCheckoutMessage] = useState(null);
+    const [checkoutMessageType, setCheckoutMessageType] = useState('success'); // 'success' | 'cancel' | 'error'
     const calendar = new KoreanLunarCalendar();
 
     useEffect(() => {
@@ -36,8 +39,43 @@ export default function Calendar() {
     }, []);
 
     useEffect(() => {
+        const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+        const status = params.get('checkout');
+        if (status === 'success') {
+            setCheckoutMessage('결제가 완료되었습니다. 감사합니다.');
+            setCheckoutMessageType('success');
+        }
+        if (status === 'cancel') {
+            setCheckoutMessage('결제가 취소되었습니다.');
+            setCheckoutMessageType('cancel');
+        }
+        if (status) {
+            window.history.replaceState({}, '', window.location.pathname);
+            const t = setTimeout(() => setCheckoutMessage(null), 5000);
+            return () => clearTimeout(t);
+        }
+    }, []);
+
+    useEffect(() => {
         renderCalendar(currentDate);
     }, [currentDate]);
+
+    const handleCheckout = async () => {
+        setCheckoutLoading(true);
+        setCheckoutMessage(null);
+        try {
+            const res = await fetch('/api/stripe/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Checkout failed');
+            if (data.url) window.location.href = data.url;
+            else throw new Error('No checkout URL');
+        } catch (err) {
+            setCheckoutMessage(err.message || '결제 시작에 실패했습니다.');
+            setCheckoutMessageType('error');
+        } finally {
+            setCheckoutLoading(false);
+        }
+    };
 
     const renderCalendar = (date) => {
         const year = date.getFullYear();
@@ -140,13 +178,25 @@ export default function Calendar() {
                     <button onClick={handleNextMonth} className="text-2xl text-gray-500 hover:text-gray-900 transition-colors p-2">&gt;</button>
                 </div>
 
-                {/* Auth Button */}
-                <div className="order-1 sm:order-2 self-end sm:self-auto">
+                {/* Auth + Stripe */}
+                <div className="order-1 sm:order-2 self-end sm:self-auto flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-3">
+                    {checkoutMessage && (
+                        <span className={`text-sm sm:order-3 ${checkoutMessageType === 'success' ? 'text-green-600' : checkoutMessageType === 'error' ? 'text-red-600' : 'text-gray-600'}`}>
+                            {checkoutMessage}
+                        </span>
+                    )}
                     {user ? (
                         <div className="flex items-center gap-3">
                             <span className="text-sm text-gray-600 hidden sm:inline">
                                 안녕하세요, {user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님
                             </span>
+                            <button
+                                onClick={handleCheckout}
+                                disabled={checkoutLoading}
+                                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-lg transition-colors shadow-sm"
+                            >
+                                {checkoutLoading ? '이동 중…' : '구독하기'}
+                            </button>
                             <button
                                 onClick={signOut}
                                 className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
@@ -155,12 +205,21 @@ export default function Calendar() {
                             </button>
                         </div>
                     ) : (
-                        <button
-                            onClick={signInWithGoogle}
-                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm"
-                        >
-                            Google로 로그인
-                        </button>
+                        <>
+                            <button
+                                onClick={handleCheckout}
+                                disabled={checkoutLoading}
+                                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-lg transition-colors shadow-sm"
+                            >
+                                {checkoutLoading ? '이동 중…' : '구독하기'}
+                            </button>
+                            <button
+                                onClick={signInWithGoogle}
+                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm"
+                            >
+                                Google로 로그인
+                            </button>
+                        </>
                     )}
                 </div>
             </header>

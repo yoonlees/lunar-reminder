@@ -16,6 +16,14 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+### Stripe (Payments)
+
+1. Copy `.env.example` to `.env.local` and set:
+   - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+   - `STRIPE_PRICE_ID` (create a Product and Price in [Stripe Dashboard](https://dashboard.stripe.com/products))
+2. **Webhook (Fly.io):** In Stripe Dashboard → Developers → Webhooks, add endpoint `https://<your-app>.fly.dev/api/stripe/webhook` and subscribe to `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`. Use the signing secret as `STRIPE_WEBHOOK_SECRET`.
+3. Set the same env vars in Fly.io: `fly secrets set STRIPE_SECRET_KEY=sk_live_... STRIPE_WEBHOOK_SECRET=whsec_... STRIPE_PRICE_ID=price_...` (and optionally `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` if the client needs it).
+
 You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
