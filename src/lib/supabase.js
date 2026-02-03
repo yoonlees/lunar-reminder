@@ -1,9 +1,9 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-// Keys from legacy_backup/supabase-client.js
-const SUPABASE_URL = 'https://zcugdaebtnnegfqyapxe.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjdWdkYWVidG5uZWdmcXlhcHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2MTA4MjAsImV4cCI6MjA4NTE4NjgyMH0.wjqwCihrcwN4b00nBqw_9BC88jcXD6tF_ByxhUzCW9I';
+// Read Supabase credentials from environment variables
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zcugdaebtnnegfqyapxe.supabase.co';
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjdWdkYWVidG5uZWdmcXlhcHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2MTA4MjAsImV4cCI6MjA4NTE4NjgyMH0.wjqwCihrcwN4b00nBqw_9BC88jcXD6tF_ByxhUzCW9I';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
