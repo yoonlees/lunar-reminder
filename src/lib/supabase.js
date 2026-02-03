@@ -34,8 +34,8 @@ export async function signInWithGoogle() {
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            // redirectTo: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
-            redirectTo: typeof window !== 'undefined' ? window.location.origin : 'https://lunar.kiwishare.com'
+            redirectTo: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
+            // redirectTo: typeof window !== 'undefined' ? window.location.origin : 'https://lunar.kiwishare.com'
         }
     });
     if (error) console.error('Error logging in:', error);

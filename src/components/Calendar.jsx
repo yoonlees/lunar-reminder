@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import KoreanLunarCalendar from 'korean-lunar-calendar';
-import { signInWithGoogle, signOut, getCurrentUser, supabase } from '@/lib/supabase';
+import { signInWithGoogle, signOut, getCurrentUser, hasActiveSubscription, supabase } from '@/lib/supabase';
 import { Solar } from 'lunar-javascript';
 
 // Solar Terms Mapping (Chinese -> Korean)
@@ -17,6 +17,7 @@ export default function Calendar() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [days, setDays] = useState([]);
     const [user, setUser] = useState(null);
+    const [isSubscribed, setIsSubscribed] = useState(false);
     const [checkoutLoading, setCheckoutLoading] = useState(false);
     const [checkoutMessage, setCheckoutMessage] = useState(null);
     const [checkoutMessageType, setCheckoutMessageType] = useState('success'); // 'success' | 'cancel' | 'error'
@@ -27,12 +28,27 @@ export default function Calendar() {
         const now = new Date();
         if (!currentDate) setCurrentDate(now);
 
-        // Initial Auth Check
-        getCurrentUser().then(setUser);
+        // Initial Auth & Subscription Check
+        async function initAuth() {
+            const currentUser = await getCurrentUser();
+            setUser(currentUser);
+            if (currentUser) {
+                const subscribed = await hasActiveSubscription(currentUser.id);
+                setIsSubscribed(subscribed);
+            }
+        }
+        initAuth();
 
         // Auth Listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            setUser(session?.user ?? null);
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            const currentUser = session?.user ?? null;
+            setUser(currentUser);
+            if (currentUser) {
+                const subscribed = await hasActiveSubscription(currentUser.id);
+                setIsSubscribed(subscribed);
+            } else {
+                setIsSubscribed(false);
+            }
         });
 
         return () => subscription.unsubscribe();
@@ -44,6 +60,23 @@ export default function Calendar() {
         if (status === 'success') {
             setCheckoutMessage('결제가 완료되었습니다. 감사합니다.');
             setCheckoutMessageType('success');
+
+            // Poll for subscription status update (webhook might be slow)
+            if (user) {
+                let attempts = 0;
+                const maxAttempts = 10;
+                const intervalId = setInterval(async () => {
+                    attempts++;
+                    const subscribed = await hasActiveSubscription(user.id);
+                    if (subscribed) {
+                        setIsSubscribed(true);
+                        clearInterval(intervalId);
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(intervalId);
+                    }
+                }, 2000); // Check every 2 seconds
+                return () => clearInterval(intervalId);
+            }
         }
         if (status === 'cancel') {
             setCheckoutMessage('결제가 취소되었습니다.');
@@ -51,10 +84,10 @@ export default function Calendar() {
         }
         if (status) {
             window.history.replaceState({}, '', window.location.pathname);
-            const t = setTimeout(() => setCheckoutMessage(null), 5000);
+            const t = setTimeout(() => setCheckoutMessage(null), 10000); // Increased to 10s to ensure message is seen
             return () => clearTimeout(t);
         }
-    }, []);
+    }, [user]); // user dependency added to ensure we have user ID for polling
 
     useEffect(() => {
         renderCalendar(currentDate);
@@ -203,32 +236,28 @@ export default function Calendar() {
                             <span className="text-sm text-gray-600 hidden sm:inline">
                                 안녕하세요, {user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님
                             </span>
-                            <button
-                                onClick={handleCheckout}
-                                disabled={checkoutLoading}
-                                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-lg transition-colors shadow-sm"
-                            >
-                                {checkoutLoading ? '이동 중…' : '구독하기'}
-                            </button>
+                            {!isSubscribed && (
+                                <button
+                                    onClick={handleCheckout}
+                                    disabled={checkoutLoading}
+                                    className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 disabled:opacity-50 rounded-full transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95"
+                                >
+                                    {checkoutLoading ? '이동 중…' : '구독하기'}
+                                </button>
+                            )}
                             <button
                                 onClick={signOut}
-                                className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                                className="px-5 py-2.5 text-sm font-medium text-red-600 bg-transparent hover:bg-red-50 border border-transparent hover:border-red-100 rounded-full transition-all duration-200"
                             >
                                 로그아웃
                             </button>
                         </div>
                     ) : (
                         <>
-                            <button
-                                onClick={handleCheckout}
-                                disabled={checkoutLoading}
-                                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-lg transition-colors shadow-sm"
-                            >
-                                {checkoutLoading ? '이동 중…' : '구독하기'}
-                            </button>
+
                             <button
                                 onClick={signInWithGoogle}
-                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm"
+                                className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 rounded-full transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95"
                             >
                                 Google로 로그인
                             </button>
