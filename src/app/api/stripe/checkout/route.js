@@ -19,6 +19,15 @@ export async function POST(request) {
   }
 
   try {
+    // Get the authenticated user to link subscription to their profile
+    const user = await getCurrentUser();
+    if (!user || !user.email) {
+      return NextResponse.json(
+        { error: 'You must be logged in to subscribe' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json().catch(() => ({}));
     const requestedPriceId = body.priceId || body.price_id;
     const finalPriceId = requestedPriceId || priceId;
@@ -38,7 +47,10 @@ export async function POST(request) {
       success_url: `${baseUrl}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/?checkout=cancel`,
       allow_promotion_codes: true,
-      metadata: {},
+      customer_email: user.email, // Use authenticated user's email
+      metadata: {
+        user_id: user.id, // Store user ID for reference
+      },
     });
 
     return NextResponse.json({ url: session.url });
