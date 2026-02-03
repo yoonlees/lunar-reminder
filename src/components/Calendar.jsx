@@ -33,7 +33,6 @@ export default function Calendar() {
         const now = new Date();
         if (!currentDate) setCurrentDate(now);
 
-        // Initial Auth & Subscription Check
         async function initAuth() {
             const currentUser = await getCurrentUser();
             setUser(currentUser);
@@ -45,26 +44,22 @@ export default function Calendar() {
         initAuth();
 
         // Auth Listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            const currentUser = session?.user ?? null;
-            setUser(currentUser);
-            if (currentUser) {
-                const subscribed = await hasActiveSubscription(currentUser.id);
-                setIsSubscribed(subscribed);
-
-                // Ensure profile exists
-                await createOrUpdateProfile(currentUser);
-
-                fetchReminders(currentUser.id);
-            } else {
-                setIsSubscribed(false);
-                setReminders([]);
-            }
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
         });
 
         return () => subscription.unsubscribe();
     }, []);
 
+    // Separate effect to fetch data when user changes
+    useEffect(() => {
+        if (user?.id) {
+            checkSubscription(user.id);
+            fetchReminders(user.id);
+        } else {
+            setReminders([]); // Clear reminders if logged out
+        }
+    }, [user?.id]);
     useEffect(() => {
         const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
         const status = params.get('checkout');
@@ -98,7 +93,7 @@ export default function Calendar() {
             const t = setTimeout(() => setCheckoutMessage(null), 10000); // Increased to 10s to ensure message is seen
             return () => clearTimeout(t);
         }
-    }, [user]); // user dependency added to ensure we have user ID for polling
+    }, [user]);
 
     useEffect(() => {
         renderCalendar(currentDate);
@@ -132,6 +127,12 @@ export default function Calendar() {
         } finally {
             setCheckoutLoading(false);
         }
+    };
+
+    const checkSubscription = async (userId) => {
+        if (!userId) return;
+        const subscribed = await hasActiveSubscription(userId);
+        setIsSubscribed(subscribed);
     };
 
     const fetchReminders = async (userId) => {
@@ -207,7 +208,11 @@ export default function Calendar() {
                 recurrence: eventData.recurrence,
                 notificationEnabled: eventData.notification_enabled,
                 solarDate: eventData.solar_date,
-                lunarDate: { month: lunar.month, day: lunar.day }
+                lunarDate: {
+                    month: lunar.month,
+                    day: lunar.day,
+                    isLunar: eventData.isLunar // Store preference
+                }
             };
 
             console.log('Sending payload to API:', reminderPayload);
@@ -311,6 +316,8 @@ export default function Calendar() {
                 id: `day-${d}`,
                 day: d,
                 lunarDateStr,
+                lunarMonth: lunar.month, // Store for matching
+                lunarDay: lunar.day,     // Store for matching
                 term: termKorean,
                 holidayName,
                 isHoliday,
@@ -397,10 +404,40 @@ export default function Calendar() {
                 })}
 
                 {days.map(day => {
-                    const dayReminder = reminders.find(r => r.solar_date === day.fullDateStr);
-                    return day.type === 'empty' ? (
-                        <div key={day.id} className="day-card empty bg-transparent"></div>
-                    ) : (
+                    // Skip checking reminders for empty days
+                    if (day.type === 'empty' || !day.fullDateStr) {
+                        return <div key={day.id} className="day-card empty bg-transparent"></div>;
+                    }
+
+                    // Find reminder for this day
+                    const dayReminder = reminders.find(r => {
+                        // 1. Check exact date match (Non-recurring or first instance)
+                        if (r.solar_date === day.fullDateStr) return true;
+
+                        // 2. Check Yearly Recurrence
+                        if (r.recurrence === 'yearly') {
+                            const isLunarRecurrence = r.lunar_date?.isLunar !== false; // Default to true
+
+                            if (isLunarRecurrence) {
+                                // Match Lunar Month & Day (Use loose equality for string/number safety)
+                                const isMatch = r.lunar_date?.month == day.lunarMonth &&
+                                    r.lunar_date?.day == day.lunarDay;
+                                if (isMatch) return true;
+                            } else {
+                                // Match Solar Month & Day
+                                const [rYear, rMonth, rDay] = r.solar_date.split('-').map(Number);
+                                const [dYear, dMonth, dDay] = day.fullDateStr.split('-').map(Number);
+
+                                const isMatch = rMonth === dMonth && rDay === dDay;
+                                if (isMatch) return true;
+                            }
+                        }
+                        return false;
+                    });
+
+
+
+                    return (
                         <div
                             key={day.id}
                             className={`day-card relative rounded-xl sm:rounded-2xl p-1 sm:p-3 flex flex-col justify-between cursor-pointer  
