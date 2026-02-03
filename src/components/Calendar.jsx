@@ -197,7 +197,8 @@ export default function Calendar() {
                 holidayName,
                 isHoliday,
                 isToday,
-                fullDateStr
+                fullDateStr,
+                dayOfWeek: new Date(year, month, d).getDay()
             });
         }
         setDays(newDays);
@@ -269,12 +270,14 @@ export default function Calendar() {
             </header>
 
             <div className="calendar-grid">
-                {['일', '월', '화', '수', '목', '금', '토'].map((day, idx) => (
-                    <div key={day} className={`text-center font-semibold text-sm uppercase tracking-wider pb-2 
-                        ${idx === 0 ? 'text-red-500' : idx === 6 ? 'text-blue-500' : 'text-gray-500'}`}>
-                        {day}
-                    </div>
-                ))}
+                {['일', '월', '화', '수', '목', '금', '토'].map((day, idx) => {
+                    const colorClass = idx === 0 ? 'text-red-600' : idx === 6 ? 'text-blue-600' : 'text-gray-500';
+                    return (
+                        <div key={day} className={`text-center font-semibold text-sm uppercase tracking-wider pb-2 ${colorClass}`}>
+                            {day}
+                        </div>
+                    );
+                })}
 
                 {days.map(day => (
                     day.type === 'empty' ? (
@@ -287,10 +290,9 @@ export default function Calendar() {
                     `}
                             onClick={() => console.log('Clicked', day.fullDateStr)}
                         >
-                            <span className={`text-xl sm:text-2xl font-bold 
-                                ${day.isHoliday || new Date(day.fullDateStr).getDay() === 0 ? 'text-red-500' :
-                                    new Date(day.fullDateStr).getDay() === 6 ? 'text-blue-500' : 'text-gray-800'}
-                            `}>
+                            <span className={`text-xl sm:text-2xl font-bold ${day.isHoliday || day.dayOfWeek === 0 ? 'text-red-600' :
+                                    day.dayOfWeek === 6 ? 'text-blue-600' : 'text-gray-800'
+                                }`}>
                                 {day.day}
                             </span>
                             <div className="flex flex-col items-end text-xs sm:text-sm font-medium text-gray-500">
