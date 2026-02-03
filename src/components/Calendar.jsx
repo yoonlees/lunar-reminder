@@ -216,7 +216,7 @@ export default function Calendar() {
 
     return (
         <div className="w-full max-w-4xl bg-white rounded-3xl shadow-xl p-4 sm:p-8 overflow-hidden select-none">
-            <header className="flex flex-col sm:flex-row justify-between items-center mb-6 sm:mb-8 gap-4">
+            <header className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-8 gap-3 sm:gap-4">
 
                 {/* Month Navigation */}
                 <div className="flex items-center justify-between w-full sm:w-auto gap-4 order-2 sm:order-1">
@@ -269,7 +269,7 @@ export default function Calendar() {
                 </div>
             </header>
 
-            <div className="calendar-grid">
+            <div className="grid grid-cols-7 gap-1 sm:gap-4">
                 {['일', '월', '화', '수', '목', '금', '토'].map((day, idx) => {
                     const colorClass = idx === 0 ? 'text-red-600' : idx === 6 ? 'text-blue-600' : 'text-gray-500';
                     return (
@@ -285,13 +285,13 @@ export default function Calendar() {
                     ) : (
                         <div
                             key={day.id}
-                            className={`day-card relative rounded-2xl p-2 sm:p-3 flex flex-col justify-between cursor-pointer 
+                            className={`day-card relative rounded-xl sm:rounded-2xl p-1 sm:p-3 flex flex-col justify-between cursor-pointer  
                         ${day.isToday ? 'today' : ''} 
                     `}
                             onClick={() => console.log('Clicked', day.fullDateStr)}
                         >
                             <span className={`text-xl sm:text-2xl font-bold ${day.isHoliday || day.dayOfWeek === 0 ? 'text-red-600' :
-                                    day.dayOfWeek === 6 ? 'text-blue-600' : 'text-gray-800'
+                                day.dayOfWeek === 6 ? 'text-blue-600' : 'text-gray-800'
                                 }`}>
                                 {day.day}
                             </span>
