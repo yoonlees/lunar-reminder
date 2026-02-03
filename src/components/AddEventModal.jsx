@@ -2,11 +2,26 @@
 
 import React, { useState } from 'react';
 
-export default function AddEventModal({ isOpen, onClose, onSave, selectedDate }) {
+export default function AddEventModal({ isOpen, onClose, onSave, onDelete, selectedDate, existingEvent }) {
     const [title, setTitle] = useState('');
     const [isRecurring, setIsRecurring] = useState(false);
     const [enableAlert, setEnableAlert] = useState(true);
     const [loading, setLoading] = useState(false);
+
+    // Effect to reset or pre-fill form when modal opens
+    React.useEffect(() => {
+        if (isOpen) {
+            if (existingEvent) {
+                setTitle(existingEvent.title);
+                setIsRecurring(existingEvent.recurrence === 'yearly');
+                setEnableAlert(existingEvent.notification_enabled);
+            } else {
+                setTitle('');
+                setIsRecurring(false);
+                setEnableAlert(true);
+            }
+        }
+    }, [isOpen, existingEvent]);
 
     if (!isOpen) return null;
 
@@ -15,6 +30,7 @@ export default function AddEventModal({ isOpen, onClose, onSave, selectedDate })
         setLoading(true);
         try {
             const result = await onSave({
+                id: existingEvent?.id, // Pass ID if updating
                 title,
                 recurrence: isRecurring ? 'yearly' : 'none',
                 notification_enabled: enableAlert,
@@ -41,7 +57,7 @@ export default function AddEventModal({ isOpen, onClose, onSave, selectedDate })
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
                 <h2 className="text-xl font-bold text-gray-800 mb-4">
-                    일정 추가 ({selectedDate})
+                    {existingEvent ? `일정 수정 (${selectedDate})` : `일정 추가 (${selectedDate})`}
                 </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -94,6 +110,19 @@ export default function AddEventModal({ isOpen, onClose, onSave, selectedDate })
                     </p>
 
                     <div className="flex gap-3 mt-6">
+                        {existingEvent && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (confirm('정말로 삭제하시겠습니까?')) {
+                                        onDelete(existingEvent.id);
+                                    }
+                                }}
+                                className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                            >
+                                삭제
+                            </button>
+                        )}
                         <button
                             type="button"
                             onClick={onClose}
@@ -106,7 +135,7 @@ export default function AddEventModal({ isOpen, onClose, onSave, selectedDate })
                             disabled={loading}
                             className="flex-1 px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md transition-all disabled:opacity-50"
                         >
-                            {loading ? '저장 중...' : '저장'}
+                            {loading ? '저장 중...' : (existingEvent ? '수정' : '저장')}
                         </button>
                     </div>
                 </form>

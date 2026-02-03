@@ -22,6 +22,7 @@ export default function Calendar() {
     const [reminders, setReminders] = useState([]);
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedDate, setSelectedDate] = useState(null);
+    const [selectedEvent, setSelectedEvent] = useState(null);
     const [checkoutLoading, setCheckoutLoading] = useState(false);
     const [checkoutMessage, setCheckoutMessage] = useState(null);
     const [checkoutMessageType, setCheckoutMessageType] = useState('success'); // 'success' | 'cancel' | 'error'
@@ -156,8 +157,35 @@ export default function Calendar() {
             alert('일정을 추가하려면 로그인이 필요합니다.');
             return;
         }
+
+        // Find existing event for this date
+        const existingEvent = reminders.find(r => r.solar_date === dateStr);
+        setSelectedEvent(existingEvent || null);
+
         setSelectedDate(dateStr);
         setModalOpen(true);
+    };
+
+    const handleDeleteEvent = async (eventId) => {
+        if (!user) return;
+
+        try {
+            const res = await fetch(`/api/reminders?id=${eventId}&userId=${user.id}`, {
+                method: 'DELETE'
+            });
+            const result = await res.json();
+
+            if (res.ok) {
+                console.log('Event deleted successfully');
+                fetchReminders(user.id);
+                setModalOpen(false);
+            } else {
+                alert(`Failed to delete event: ${result.error}`);
+            }
+        } catch (e) {
+            console.error('Exception deleting event:', e);
+            alert('Failed to delete event');
+        }
     };
 
     const handleSaveEvent = async (eventData) => {
@@ -182,22 +210,30 @@ export default function Calendar() {
                 lunarDate: { month: lunar.month, day: lunar.day }
             };
 
-            console.log('Sending payload to Supabase:', reminderPayload);
             console.log('Sending payload to API:', reminderPayload);
+
+            // Determine if Create (POST) or Update (PUT)
+            const method = eventData.id ? 'PUT' : 'POST';
+            const body = {
+                userId: user.id,
+                ...reminderPayload,
+                id: eventData.id // Include ID for updates
+            };
+
             const response = await fetch('/api/reminders', {
-                method: 'POST',
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: user.id, ...reminderPayload })
+                body: JSON.stringify(body)
             });
 
             const result = await response.json();
 
             if (response.ok) {
-                console.log('Event saved successfully via API:', result);
+                console.log(`Event ${method === 'POST' ? 'saved' : 'updated'} successfully via API:`, result);
                 fetchReminders(user.id);
                 return { success: true };
             } else {
-                console.error('Failed to create reminder via API:', result.error);
+                console.error('Failed to save reminder via API:', result.error);
                 return { success: false, error: result.error };
             }
         } catch (error) {
@@ -393,7 +429,9 @@ export default function Calendar() {
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}
                 onSave={handleSaveEvent}
+                onDelete={handleDeleteEvent}
                 selectedDate={selectedDate}
+                existingEvent={selectedEvent}
             />
         </div >
     );
