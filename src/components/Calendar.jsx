@@ -61,10 +61,23 @@ export default function Calendar() {
     }, [currentDate]);
 
     const handleCheckout = async () => {
+        if (!user || !user.email) {
+            setCheckoutMessage('로그인이 필요합니다.');
+            setCheckoutMessageType('error');
+            return;
+        }
+
         setCheckoutLoading(true);
         setCheckoutMessage(null);
         try {
-            const res = await fetch('/api/stripe/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+            const res = await fetch('/api/stripe/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: user.email,
+                    user_id: user.id
+                })
+            });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Checkout failed');
             if (data.url) window.location.href = data.url;

@@ -4,8 +4,27 @@ import { createClient } from '@supabase/supabase-js'
 // Read Supabase credentials from environment variables
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zcugdaebtnnegfqyapxe.supabase.co';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjdWdkYWVidG5uZWdmcXlhcHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2MTA4MjAsImV4cCI6MjA4NTE4NjgyMH0.wjqwCihrcwN4b00nBqw_9BC88jcXD6tF_ByxhUzCW9I';
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/**
+ * Get a Supabase client with the Service Role key
+ * WARNING: access to this client bypasses Row Level Security.
+ * Use this only on the server for admin tasks.
+ */
+export function getServiceSupabase() {
+    if (!SUPABASE_SERVICE_ROLE_KEY) {
+        console.warn('SUPABASE_SERVICE_ROLE_KEY is not set. Falling back to anon key.');
+        return supabase;
+    }
+    return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
+        }
+    });
+}
 
 // =====================================================
 // AUTH FUNCTIONS
@@ -30,6 +49,49 @@ export async function signOut() {
 
 export async function getCurrentUser() {
     const { data: { session } } = await supabase.auth.getSession();
+    return session?.user ?? null;
+}
+
+/**
+ * Create a Supabase client for server-side use (API routes)
+ * This client can read auth cookies from the request
+ * @param {Request} request - The Next.js request object
+ * @returns {Object} Server-side Supabase client
+ */
+export function createServerClient(request) {
+    const { createClient } = require('@supabase/supabase-js');
+
+    // Get cookies from request headers
+    const cookieHeader = request.headers.get('cookie') || '';
+
+    return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+            storage: {
+                getItem: (key) => {
+                    // Parse cookies and find the auth token
+                    const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+                        const [name, value] = cookie.trim().split('=');
+                        acc[name] = value;
+                        return acc;
+                    }, {});
+                    return cookies[key] || null;
+                },
+                setItem: () => { }, // No-op for server
+                removeItem: () => { }, // No-op for server
+            },
+        },
+    });
+}
+
+/**
+ * Get current user from server-side request
+ * Use this in API routes instead of getCurrentUser()
+ * @param {Request} request - The Next.js request object
+ * @returns {Promise<Object|null>} User object or null
+ */
+export async function getServerUser(request) {
+    const serverClient = createServerClient(request);
+    const { data: { session } } = await serverClient.auth.getSession();
     return session?.user ?? null;
 }
 
@@ -141,9 +203,10 @@ export async function hasActiveSubscription(userId) {
 /**
  * Create or update subscription from Stripe webhook
  * @param {Object} subscriptionData - Subscription data from Stripe
+ * @param {Object} supabaseClient - Optional Supabase client (use service role client for webhooks)
  * @returns {Promise<Object|null>} Created/updated subscription or null
  */
-export async function createOrUpdateSubscription(subscriptionData) {
+export async function createOrUpdateSubscription(subscriptionData, supabaseClient = supabase) {
     const {
         userId,
         stripeCustomerId,
@@ -161,7 +224,7 @@ export async function createOrUpdateSubscription(subscriptionData) {
     }
 
     // First, check if subscription exists by stripe_customer_id
-    const { data: existing } = await supabase
+    const { data: existing } = await supabaseClient
         .from('subscriptions')
         .select('id')
         .eq('stripe_customer_id', stripeCustomerId)
@@ -182,7 +245,7 @@ export async function createOrUpdateSubscription(subscriptionData) {
     let result;
     if (existing) {
         // Update existing subscription
-        result = await supabase
+        result = await supabaseClient
             .from('subscriptions')
             .update(payload)
             .eq('id', existing.id)
@@ -190,7 +253,7 @@ export async function createOrUpdateSubscription(subscriptionData) {
             .single();
     } else {
         // Create new subscription
-        result = await supabase
+        result = await supabaseClient
             .from('subscriptions')
             .insert(payload)
             .select()

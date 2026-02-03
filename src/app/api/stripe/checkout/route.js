@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { stripe, getStripePriceId } from '@/lib/stripe';
-import { getCurrentUser } from '@/lib/supabase';
+import { getServerUser } from '@/lib/supabase';
 
 export async function POST(request) {
   if (!stripe) {
@@ -19,16 +19,28 @@ export async function POST(request) {
   }
 
   try {
-    // Get the authenticated user to link subscription to their profile
-    const user = await getCurrentUser();
-    if (!user || !user.email) {
+    const body = await request.json().catch(() => ({}));
+    
+    // Try to get user from server-side session (cookies) first
+    let serverUser = null;
+    try {
+      serverUser = await getServerUser(request);
+    } catch (err) {
+      // If server-side auth fails (e.g., cookies not configured), fall back to client-provided info
+      console.log('Server-side auth check failed, using client-provided user info');
+    }
+
+    // Use server user if available, otherwise use client-provided info
+    const userEmail = serverUser?.email || body.email || body.customer_email;
+    const userId = serverUser?.id || body.user_id;
+
+    if (!userEmail) {
       return NextResponse.json(
         { error: 'You must be logged in to subscribe' },
         { status: 401 }
       );
     }
 
-    const body = await request.json().catch(() => ({}));
     const requestedPriceId = body.priceId || body.price_id;
     const finalPriceId = requestedPriceId || priceId;
 
@@ -47,9 +59,9 @@ export async function POST(request) {
       success_url: `${baseUrl}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/?checkout=cancel`,
       allow_promotion_codes: true,
-      customer_email: user.email, // Use authenticated user's email
+      customer_email: userEmail, // Use email from request
       metadata: {
-        user_id: user.id, // Store user ID for reference
+        user_id: userId || '', // Store user ID if provided
       },
     });
 

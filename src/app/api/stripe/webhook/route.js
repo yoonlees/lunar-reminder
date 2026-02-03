@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
-import { supabase, createOrUpdateSubscription } from '@/lib/supabase';
+import { getServiceSupabase, createOrUpdateSubscription } from '@/lib/supabase';
 
 export async function POST(request) {
   if (!stripe) {
@@ -34,7 +34,8 @@ export async function POST(request) {
         console.log('Checkout completed:', session.id, session.customer_email);
 
         // Get user ID from customer email
-        const { data: userData, error: userError } = await supabase
+        const supabaseAdmin = getServiceSupabase();
+        const { data: userData, error: userError } = await supabaseAdmin
           .from('profiles')
           .select('id')
           .eq('email', session.customer_email)
@@ -57,7 +58,7 @@ export async function POST(request) {
           cancelAtPeriodEnd: false
         };
 
-        const savedSubscription = await createOrUpdateSubscription(subscriptionData);
+        const savedSubscription = await createOrUpdateSubscription(subscriptionData, supabaseAdmin);
         if (savedSubscription) {
           console.log('Subscription saved to database:', savedSubscription.id);
         } else {
@@ -71,7 +72,8 @@ export async function POST(request) {
         console.log('Subscription updated:', subscription.id);
 
         // Get user ID from customer
-        const { data: subData, error: subError } = await supabase
+        const supabaseAdmin = getServiceSupabase();
+        const { data: subData, error: subError } = await supabaseAdmin
           .from('subscriptions')
           .select('user_id')
           .eq('stripe_customer_id', subscription.customer)
@@ -94,7 +96,7 @@ export async function POST(request) {
           cancelAtPeriodEnd: subscription.cancel_at_period_end
         };
 
-        const updatedSubscription = await createOrUpdateSubscription(subscriptionData);
+        const updatedSubscription = await createOrUpdateSubscription(subscriptionData, supabaseAdmin);
         if (updatedSubscription) {
           console.log('Subscription updated in database:', updatedSubscription.id);
         } else {
@@ -108,7 +110,8 @@ export async function POST(request) {
         console.log('Subscription deleted:', subscription.id);
 
         // Get user ID from customer
-        const { data: subData, error: subError } = await supabase
+        const supabaseAdmin = getServiceSupabase();
+        const { data: subData, error: subError } = await supabaseAdmin
           .from('subscriptions')
           .select('user_id')
           .eq('stripe_customer_id', subscription.customer)
@@ -131,7 +134,7 @@ export async function POST(request) {
           cancelAtPeriodEnd: false
         };
 
-        const canceledSubscription = await createOrUpdateSubscription(subscriptionData);
+        const canceledSubscription = await createOrUpdateSubscription(subscriptionData, supabaseAdmin);
         if (canceledSubscription) {
           console.log('Subscription marked as canceled in database:', canceledSubscription.id);
         } else {
