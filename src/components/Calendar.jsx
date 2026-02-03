@@ -519,20 +519,20 @@ export default function Calendar() {
                     return (
                         <div
                             key={day.id}
-                            className={`day-card relative rounded-xl sm:rounded-2xl p-1 sm:p-3 flex flex-col justify-between cursor-pointer  
+                            className={`day-card relative rounded-xl sm:rounded-2xl p-1 sm:p-3 flex flex-col justify-between items-center cursor-pointer  
                         ${day.isToday ? 'today' : ''} 
                     `}
                             onClick={() => handleDateClick(day.fullDateStr)}
                         >
-                            <span className={`text-xl sm:text-2xl font-bold ${day.isHoliday || day.dayOfWeek === 0 ? 'text-red-600' :
+                            <span className={`w-full text-center text-sm sm:text-base font-bold ${day.isHoliday || day.dayOfWeek === 0 ? 'text-red-600' :
                                 day.dayOfWeek === 6 ? 'text-blue-600' : 'text-gray-800'
                                 }`}>
                                 {day.day}
                             </span>
-                            <div className="flex flex-col items-end text-xs sm:text-sm font-medium text-gray-500">
-                                {day.term && <span className="text-green-600 text-[10px] sm:text-xs mb-[1px] text-right font-bold">{day.term}</span>}
-                                {day.holidayName && <span className="text-red-600 text-[10px] sm:text-xs mb-[1px] text-right leading-tight">{day.holidayName}</span>}
-                                {dayReminder && <span className="text-blue-600 text-[10px] sm:text-xs mb-[1px] text-right leading-tight truncate w-full">{dayReminder.title}</span>}
+                            <div className="w-full flex flex-col items-center text-xs sm:text-sm font-medium text-gray-500">
+                                {day.term && <span className="text-green-600 text-[10px] sm:text-xs mb-[1px] text-center font-bold">{day.term}</span>}
+                                {day.holidayName && <span className="text-red-600 text-[10px] sm:text-xs mb-[1px] text-center leading-tight">{day.holidayName}</span>}
+                                {dayReminder && <span className="text-blue-600 text-[10px] sm:text-xs mb-[1px] text-center leading-tight truncate w-full">{dayReminder.title}</span>}
                                 <span className="opacity-80">{day.lunarDateStr}</span>
                             </div>
                         </div>
