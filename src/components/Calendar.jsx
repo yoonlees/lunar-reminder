@@ -60,6 +60,30 @@ export default function Calendar() {
             setReminders([]); // Clear reminders if logged out
         }
     }, [user?.id]);
+
+    const [isPickerOpen, setIsPickerOpen] = useState(false);
+    const [pickerYear, setPickerYear] = useState(currentDate.getFullYear());
+
+    const togglePicker = () => {
+        if (!isPickerOpen) {
+            setPickerYear(currentDate.getFullYear());
+            setIsPickerOpen(true);
+        } else {
+            setIsPickerOpen(false);
+        }
+    };
+
+    const handleJumpToDate = (targetMonthIndex) => { // 0-11
+        setCurrentDate(new Date(pickerYear, targetMonthIndex, 1));
+        setIsPickerOpen(false);
+    };
+
+    const handleJumpToToday = () => {
+        const now = new Date();
+        setCurrentDate(now);
+        setPickerYear(now.getFullYear());
+        setIsPickerOpen(false);
+    };
     useEffect(() => {
         const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
         const status = params.get('checkout');
@@ -343,10 +367,65 @@ export default function Calendar() {
             <header className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-8 gap-3 sm:gap-4">
 
                 {/* Month Navigation */}
-                <div className="flex items-center justify-between w-full sm:w-auto gap-4 order-2 sm:order-1">
+                <div className="flex items-center justify-between w-full sm:w-auto gap-2 sm:gap-4 order-2 sm:order-1 relative">
+                    <button
+                        onClick={handleJumpToToday}
+                        className="text-sm font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors border border-gray-200"
+                    >
+                        오늘
+                    </button>
+
                     <button onClick={handlePrevMonth} className="text-2xl text-gray-500 hover:text-gray-900 transition-colors p-2">&lt;</button>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 capitalize min-w-[150px] text-center">{currentMonthDisplay}</h1>
+
+                    <button
+                        onClick={togglePicker}
+                        className="flex items-center gap-2 text-2xl sm:text-3xl font-bold text-gray-800 capitalize min-w-[150px] justify-center hover:bg-gray-100 rounded-lg px-3 py-1 transition-colors"
+                    >
+                        <span>{currentMonthDisplay}</span>
+                        <svg className={`w-6 h-6 text-gray-500 transition-transform duration-200 ${isPickerOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
                     <button onClick={handleNextMonth} className="text-2xl text-gray-500 hover:text-gray-900 transition-colors p-2">&gt;</button>
+
+                    {/* Month/Year Picker Popup */}
+                    {isPickerOpen && (
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 p-4 z-50 w-64 animate-in fade-in zoom-in duration-200">
+                            {/* Year Selector */}
+                            <div className="flex justify-between items-center mb-4">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setPickerYear(y => y - 1); }}
+                                    className="p-1 hover:bg-gray-100 rounded-full"
+                                >
+                                    &lt;
+                                </button>
+                                <span className="font-bold text-lg">{pickerYear}년</span>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setPickerYear(y => y + 1); }}
+                                    className="p-1 hover:bg-gray-100 rounded-full"
+                                >
+                                    &gt;
+                                </button>
+                            </div>
+
+                            {/* Month Grid */}
+                            <div className="grid grid-cols-3 gap-2">
+                                {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                                    <button
+                                        key={m}
+                                        onClick={(e) => { e.stopPropagation(); handleJumpToDate(m - 1); }}
+                                        className={`p-2 text-sm rounded-lg transition-colors ${currentDate.getMonth() === m - 1 && currentDate.getFullYear() === pickerYear
+                                            ? 'bg-blue-600 text-white'
+                                            : 'hover:bg-blue-50 text-gray-700'
+                                            }`}
+                                    >
+                                        {m}월
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Auth + Stripe */}
