@@ -1,4 +1,21 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Lunar Reminder
+
+A Korean lunar/solar calendar app with Google sign-in and Stripe subscriptions.
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Framework** | [Next.js 16](https://nextjs.org) (App Router) with [React 19](https://react.dev) |
+| **Styling** | [Tailwind CSS 4](https://tailwindcss.com) via PostCSS |
+| **Auth** | [Supabase Auth](https://supabase.com/docs/guides/auth) (Google OAuth) |
+| **Payments** | [Stripe](https://stripe.com) — Checkout for subscriptions, webhooks for events |
+| **Calendar logic** | [korean-lunar-calendar](https://www.npmjs.com/package/korean-lunar-calendar), [lunar-javascript](https://www.npmjs.com/package/lunar-javascript) (solar terms, lunar dates, holidays) |
+| **Hosting** | [Fly.io](https://fly.io) (listens on `0.0.0.0:3000`) |
+
+- **Frontend:** Single-page calendar UI (`src/app`, `src/components`), Korean locale for greetings and labels.
+- **Backend:** Next.js API routes under `src/app/api` (Stripe checkout + webhook).
+- **Config:** Env vars in `.env.local`; see `.env.example` for Stripe and Supabase.
 
 ## Getting Started
 
@@ -24,10 +41,6 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 2. **Webhook (Fly.io):** In Stripe Dashboard → Developers → Webhooks, add endpoint `https://<your-app>.fly.dev/api/stripe/webhook` and subscribe to `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`. Use the signing secret as `STRIPE_WEBHOOK_SECRET`.
 3. Set the same env vars in Fly.io: `fly secrets set STRIPE_SECRET_KEY=sk_live_... STRIPE_WEBHOOK_SECRET=whsec_... STRIPE_PRICE_ID=price_...` (and optionally `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` if the client needs it).
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
@@ -37,8 +50,7 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deploy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Fly.io:** This app is configured for [Fly.io](https://fly.io) (see `fly.toml`). The dev and start scripts bind to `0.0.0.0:3000` so the app is reachable in containers. Set Stripe and Supabase env vars with `fly secrets set`.
+- [Next.js deployment docs](https://nextjs.org/docs/app/building-your-application/deploying) for other platforms (e.g. Vercel).
