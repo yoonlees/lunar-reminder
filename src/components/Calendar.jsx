@@ -232,25 +232,27 @@ export default function Calendar() {
                         </span>
                     )}
                     {user ? (
-                        <div className="flex items-center gap-3">
-                            <span className="text-sm text-gray-600 hidden sm:inline">
-                                안녕하세요, {user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님
-                            </span>
-                            {!isSubscribed && (
+                        <div className="flex flex-col items-end gap-1">
+                            <div className="flex items-center gap-3">
+                                {!isSubscribed && (
+                                    <button
+                                        onClick={handleCheckout}
+                                        disabled={checkoutLoading}
+                                        className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 disabled:opacity-50 rounded-full transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95"
+                                    >
+                                        {checkoutLoading ? '이동 중…' : '구독하기'}
+                                    </button>
+                                )}
                                 <button
-                                    onClick={handleCheckout}
-                                    disabled={checkoutLoading}
-                                    className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 disabled:opacity-50 rounded-full transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95"
+                                    onClick={signOut}
+                                    className="px-5 py-2.5 text-sm font-medium text-red-600 bg-transparent hover:bg-red-50 border border-transparent hover:border-red-100 rounded-full transition-all duration-200"
                                 >
-                                    {checkoutLoading ? '이동 중…' : '구독하기'}
+                                    로그아웃
                                 </button>
-                            )}
-                            <button
-                                onClick={signOut}
-                                className="px-5 py-2.5 text-sm font-medium text-red-600 bg-transparent hover:bg-red-50 border border-transparent hover:border-red-100 rounded-full transition-all duration-200"
-                            >
-                                로그아웃
-                            </button>
+                            </div>
+                            <span className="text-sm text-gray-500 font-medium whitespace-nowrap mr-1">
+                                안녕하세요 {user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님!
+                            </span>
                         </div>
                     ) : (
                         <>
@@ -268,7 +270,8 @@ export default function Calendar() {
 
             <div className="calendar-grid">
                 {['일', '월', '화', '수', '목', '금', '토'].map((day, idx) => (
-                    <div key={day} className={`text-center font-semibold text-sm uppercase tracking-wider pb-2 ${idx === 0 ? 'text-red-500' : 'text-gray-500'}`}>
+                    <div key={day} className={`text-center font-semibold text-sm uppercase tracking-wider pb-2 
+                        ${idx === 0 ? 'text-red-500' : idx === 6 ? 'text-blue-500' : 'text-gray-500'}`}>
                         {day}
                     </div>
                 ))}
@@ -284,7 +287,10 @@ export default function Calendar() {
                     `}
                             onClick={() => console.log('Clicked', day.fullDateStr)}
                         >
-                            <span className={`text-xl sm:text-2xl font-bold ${day.isHoliday || new Date(day.fullDateStr).getDay() === 0 ? 'text-red-500' : 'text-gray-800'}`}>
+                            <span className={`text-xl sm:text-2xl font-bold 
+                                ${day.isHoliday || new Date(day.fullDateStr).getDay() === 0 ? 'text-red-500' :
+                                    new Date(day.fullDateStr).getDay() === 6 ? 'text-blue-500' : 'text-gray-800'}
+                            `}>
                                 {day.day}
                             </span>
                             <div className="flex flex-col items-end text-xs sm:text-sm font-medium text-gray-500">
