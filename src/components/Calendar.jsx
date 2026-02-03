@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import KoreanLunarCalendar from 'korean-lunar-calendar';
-import { signInWithGoogle, signOut, getCurrentUser, hasActiveSubscription, supabase } from '@/lib/supabase';
+import { signInWithGoogle, signOut, getCurrentUser, hasActiveSubscription, createReminder, getReminders, createOrUpdateProfile, supabase } from '@/lib/supabase';
+import AddEventModal from './AddEventModal';
 import { Solar } from 'lunar-javascript';
 
 // Solar Terms Mapping (Chinese -> Korean)
@@ -18,6 +19,9 @@ export default function Calendar() {
     const [days, setDays] = useState([]);
     const [user, setUser] = useState(null);
     const [isSubscribed, setIsSubscribed] = useState(false);
+    const [reminders, setReminders] = useState([]);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [selectedDate, setSelectedDate] = useState(null);
     const [checkoutLoading, setCheckoutLoading] = useState(false);
     const [checkoutMessage, setCheckoutMessage] = useState(null);
     const [checkoutMessageType, setCheckoutMessageType] = useState('success'); // 'success' | 'cancel' | 'error'
@@ -46,8 +50,14 @@ export default function Calendar() {
             if (currentUser) {
                 const subscribed = await hasActiveSubscription(currentUser.id);
                 setIsSubscribed(subscribed);
+
+                // Ensure profile exists
+                await createOrUpdateProfile(currentUser);
+
+                fetchReminders(currentUser.id);
             } else {
                 setIsSubscribed(false);
+                setReminders([]);
             }
         });
 
@@ -123,6 +133,79 @@ export default function Calendar() {
         }
     };
 
+    const fetchReminders = async (userId) => {
+        if (!userId) return;
+        console.log('Fetching reminders (API) for user:', userId);
+
+        try {
+            const res = await fetch(`/api/reminders?userId=${userId}`);
+            if (!res.ok) {
+                console.error('Failed to fetch reminders via API');
+                return;
+            }
+            const data = await res.json();
+            console.log('Fetched Reminders (API):', data);
+            setReminders(data);
+        } catch (e) {
+            console.error('Exception fetching reminders:', e);
+        }
+    };
+
+    const handleDateClick = (dateStr) => {
+        if (!user) {
+            alert('일정을 추가하려면 로그인이 필요합니다.');
+            return;
+        }
+        setSelectedDate(dateStr);
+        setModalOpen(true);
+    };
+
+    const handleSaveEvent = async (eventData) => {
+        if (!user) {
+            console.error('Save attempted without user');
+            return;
+        }
+
+        console.log('Saving event with data:', eventData);
+
+        try {
+            // Calculate lunar date for the event (simplified for now, ideally strictly calculated)
+            const [year, month, day] = eventData.solar_date.split('-').map(Number);
+            calendar.setSolarDate(year, month, day);
+            const lunar = calendar.getLunarCalendar();
+
+            const reminderPayload = {
+                title: eventData.title,
+                recurrence: eventData.recurrence,
+                notificationEnabled: eventData.notification_enabled,
+                solarDate: eventData.solar_date,
+                lunarDate: { month: lunar.month, day: lunar.day }
+            };
+
+            console.log('Sending payload to Supabase:', reminderPayload);
+            console.log('Sending payload to API:', reminderPayload);
+            const response = await fetch('/api/reminders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user.id, ...reminderPayload })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                console.log('Event saved successfully via API:', result);
+                fetchReminders(user.id);
+                return { success: true };
+            } else {
+                console.error('Failed to create reminder via API:', result.error);
+                return { success: false, error: result.error };
+            }
+        } catch (error) {
+            console.error('Exception in handleSaveEvent:', error);
+            return { success: false, error: error.message };
+        }
+    };
+
     const renderCalendar = (date) => {
         const year = date.getFullYear();
         const month = date.getMonth(); // 0-indexed
@@ -187,7 +270,6 @@ export default function Calendar() {
             if ((month + 1) === 10 && d === 9) { holidayName = '한글날'; isHoliday = true; }
             if ((month + 1) === 12 && d === 25) { holidayName = '성탄절'; isHoliday = true; }
 
-
             newDays.push({
                 type: 'day',
                 id: `day-${d}`,
@@ -196,7 +278,6 @@ export default function Calendar() {
                 term: termKorean,
                 holidayName,
                 isHoliday,
-                isToday,
                 fullDateStr,
                 dayOfWeek: new Date(year, month, d).getDay()
             });
@@ -279,8 +360,9 @@ export default function Calendar() {
                     );
                 })}
 
-                {days.map(day => (
-                    day.type === 'empty' ? (
+                {days.map(day => {
+                    const dayReminder = reminders.find(r => r.solar_date === day.fullDateStr);
+                    return day.type === 'empty' ? (
                         <div key={day.id} className="day-card empty bg-transparent"></div>
                     ) : (
                         <div
@@ -288,7 +370,7 @@ export default function Calendar() {
                             className={`day-card relative rounded-xl sm:rounded-2xl p-1 sm:p-3 flex flex-col justify-between cursor-pointer  
                         ${day.isToday ? 'today' : ''} 
                     `}
-                            onClick={() => console.log('Clicked', day.fullDateStr)}
+                            onClick={() => handleDateClick(day.fullDateStr)}
                         >
                             <span className={`text-xl sm:text-2xl font-bold ${day.isHoliday || day.dayOfWeek === 0 ? 'text-red-600' :
                                 day.dayOfWeek === 6 ? 'text-blue-600' : 'text-gray-800'
@@ -297,13 +379,22 @@ export default function Calendar() {
                             </span>
                             <div className="flex flex-col items-end text-xs sm:text-sm font-medium text-gray-500">
                                 {day.term && <span className="text-green-600 text-[10px] sm:text-xs mb-[1px] text-right font-bold">{day.term}</span>}
-                                {day.holidayName && <span className="text-red-500 text-[10px] sm:text-xs mb-[1px] text-right leading-tight">{day.holidayName}</span>}
+                                {day.holidayName && <span className="text-red-600 text-[10px] sm:text-xs mb-[1px] text-right leading-tight">{day.holidayName}</span>}
+                                {dayReminder && <span className="text-blue-600 text-[10px] sm:text-xs mb-[1px] text-right leading-tight truncate w-full">{dayReminder.title}</span>}
                                 <span className="opacity-80">{day.lunarDateStr}</span>
                             </div>
                         </div>
-                    )
-                ))}
+                    );
+                })}
             </div>
-        </div>
+
+
+            <AddEventModal
+                isOpen={modalOpen}
+                onClose={() => setModalOpen(false)}
+                onSave={handleSaveEvent}
+                selectedDate={selectedDate}
+            />
+        </div >
     );
 }

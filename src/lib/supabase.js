@@ -338,19 +338,41 @@ export async function createReminder(userId, reminderData) {
         return null;
     }
 
-    const { data, error } = await supabase
-        .from('reminders')
-        .insert({
-            user_id: userId,
-            title,
-            description: description || null,
-            lunar_date: lunarDate,
-            solar_date: solarDate,
-            recurrence: recurrence || 'none',
-            notification_enabled: notificationEnabled !== undefined ? notificationEnabled : true
-        })
-        .select()
-        .single();
+    console.log('createReminder: Inserting into DB...', { userId, title, solarDate });
+
+    // Create a timeout promise
+    const timeout = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timed out after 10 seconds')), 10000);
+    });
+
+    try {
+        const { data, error } = await Promise.race([
+            supabase
+                .from('reminders')
+                .insert({
+                    user_id: userId,
+                    title,
+                    description: description || null,
+                    lunar_date: lunarDate,
+                    solar_date: solarDate,
+                    recurrence: recurrence || 'none',
+                    notification_enabled: notificationEnabled !== undefined ? notificationEnabled : true
+                })
+                .select()
+                .single(),
+            timeout
+        ]);
+
+        if (error) {
+            console.error('Error creating reminder:', error);
+            return { success: false, error: error.message || 'Database error' };
+        }
+        return { success: true, data };
+
+    } catch (err) {
+        console.error('Exception in createReminder:', err);
+        return { success: false, error: err.message };
+    }
 
     if (error) {
         console.error('Error creating reminder:', error);
