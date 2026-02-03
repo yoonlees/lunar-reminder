@@ -9,12 +9,14 @@ A Korean lunar/solar calendar app with Google sign-in and Stripe subscriptions.
 | **Framework** | [Next.js 16](https://nextjs.org) (App Router) with [React 19](https://react.dev) |
 | **Styling** | [Tailwind CSS 4](https://tailwindcss.com) via PostCSS |
 | **Auth** | [Supabase Auth](https://supabase.com/docs/guides/auth) (Google OAuth) |
+| **Database** | [Supabase Postgres](https://supabase.com/docs/guides/database) (user profiles, subscriptions, reminders) |
 | **Payments** | [Stripe](https://stripe.com) — Checkout for subscriptions, webhooks for events |
 | **Calendar logic** | [korean-lunar-calendar](https://www.npmjs.com/package/korean-lunar-calendar), [lunar-javascript](https://www.npmjs.com/package/lunar-javascript) (solar terms, lunar dates, holidays) |
 | **Hosting** | [Fly.io](https://fly.io) (listens on `0.0.0.0:3000`) |
 
 - **Frontend:** Single-page calendar UI (`src/app`, `src/components`), Korean locale for greetings and labels.
 - **Backend:** Next.js API routes under `src/app/api` (Stripe checkout + webhook).
+- **Database:** Supabase Postgres with tables for user profiles, subscriptions, and reminders. See [README_DATABASE.md](README_DATABASE.md) for schema details.
 - **Config:** Env vars in `.env.local`; see `.env.example` for Stripe and Supabase.
 
 ## Getting Started
@@ -32,6 +34,15 @@ bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+### Database (Supabase)
+
+1. **Create Supabase Project:** Sign up at [supabase.com](https://supabase.com) and create a new project.
+2. **Run Migration:** Go to SQL Editor in your Supabase dashboard and run the SQL from `supabase/schema.sql` to create tables for profiles, subscriptions, and reminders.
+3. **Configure OAuth:** In Supabase Dashboard → Authentication → Providers, enable Google OAuth and add your Google OAuth credentials.
+4. **Verify Setup:** Check Table Editor to ensure `profiles`, `subscriptions`, and `reminders` tables exist with RLS enabled.
+
+See [README_DATABASE.md](README_DATABASE.md) for detailed schema documentation.
 
 ### Stripe (Payments)
 
