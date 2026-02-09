@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@aws-sdk/client-sesv2": "^3.985.0",
     "@stripe/stripe-js": "^8.7.0",
     "@supabase/supabase-js": "^2.93.3",
     "korean-lunar-calendar": "^0.3.6",
