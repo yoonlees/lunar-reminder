@@ -35,10 +35,7 @@ body {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.day-card.today {
-    background: var(--today-bg);
-    border: 2px solid var(--today-border);
-}
+
 
 .has-note::after {
     content: '';

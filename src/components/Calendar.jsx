@@ -345,6 +345,7 @@ export default function Calendar() {
                 term: termKorean,
                 holidayName,
                 isHoliday,
+                isToday,
                 fullDateStr,
                 dayOfWeek: new Date(year, month, d).getDay()
             });
@@ -520,7 +521,7 @@ export default function Calendar() {
                         <div
                             key={day.id}
                             className={`day-card relative rounded-xl sm:rounded-2xl p-1 sm:p-3 flex flex-col justify-between items-center cursor-pointer  
-                        ${day.isToday ? 'today' : ''} 
+                        ${day.isToday ? 'bg-yellow-100 ring-2 ring-yellow-400 font-bold shadow-md' : 'hover:bg-gray-50'} 
                     `}
                             onClick={() => handleDateClick(day.fullDateStr)}
                         >
