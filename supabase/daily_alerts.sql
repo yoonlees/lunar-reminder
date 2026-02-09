@@ -17,11 +17,11 @@ begin
     'Powered by Lunar Reminder'
   from public.reminders r
   join public.profiles p on r.user_id = p.id
-  where r.solar_date = current_date + interval '1 day'
+  where r.solar_date = current_date + interval '2 days'
     and r.notification_enabled = true;
     
   -- Log the execution (optional, for debugging)
-  raise notice 'Processed daily reminders for %', current_date + interval '1 day';
+  raise notice 'Processed daily reminders for %', current_date + interval '2 days';
 end;
 $$;
 
@@ -33,6 +33,6 @@ create extension if not exists pg_cron;
 -- The job name 'daily_reminder_check' prevents duplicate schedules if re-run
 select cron.schedule(
   'daily_reminder_check', 
-  '0 10 * * *', 
+  '10 16 * * *', 
   'select process_daily_reminders()'
 );
