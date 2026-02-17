@@ -9,15 +9,18 @@ export async function GET() {
 
         const supabase = getServiceSupabase();
 
-        // Use a lightweight query
+        // Insert a heartbeat record
         const { data, error } = await supabase
-            .from('reminders')
-            .select('id')
-            .limit(1)
+            .from('heartbeat')
+            .insert({ source: 'cron' })
+            .select()
             .single();
 
-        if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows found", which is fine
+        if (error) {
             console.error('[Keep-Alive] Database error:', error);
+            // Even if insert fails, we want to return 200 if DB is reachable, 
+            // but error implies DB issue or table missing. 
+            // If table missing, it's a "User needs to run migration" issue.
             return NextResponse.json(
                 { status: 'error', message: error.message, timestamp: new Date().toISOString() },
                 { status: 500 }
@@ -26,9 +29,9 @@ export async function GET() {
 
         return NextResponse.json({
             status: 'ok',
-            message: 'Supabase is alive',
+            message: 'Heartbeat recorded',
             timestamp: new Date().toISOString(),
-            data: data ? 'Connection verified' : 'Connection verified (empty table)'
+            data: data
         });
 
     } catch (err) {
