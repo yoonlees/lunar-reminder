@@ -3,15 +3,21 @@
   "version": "1.0.0",
   "main": "index.js",
   "dependencies": {
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@supabase/supabase-js": "^2.110.9",
     "expo": "~57.0.8",
+    "expo-linking": "~57.0.4",
     "expo-status-bar": "~57.0.1",
+    "expo-web-browser": "~57.0.2",
+    "korean-lunar-calendar": "^0.4.0",
+    "lunar-javascript": "^1.7.7",
     "react": "19.2.3",
     "react-native": "0.86.0"
   },
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web"
   },
   "private": true
