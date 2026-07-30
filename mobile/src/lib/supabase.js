@@ -83,6 +83,14 @@ export async function deleteReminder(reminderId) {
   return !error;
 }
 
+export async function savePushToken(userId, token) {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ push_token: token })
+    .eq('id', userId);
+  if (error) console.error('savePushToken:', error);
+}
+
 export async function hasActiveSubscription(userId) {
   const { data } = await supabase
     .from('subscriptions')

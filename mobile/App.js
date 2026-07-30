@@ -19,7 +19,9 @@ import {
   getReminders,
   saveReminder,
   deleteReminder,
+  savePushToken,
 } from './src/lib/supabase';
+import { registerForPushNotifications } from './src/lib/notifications';
 import AddEventModal from './src/components/AddEventModal';
 
 const WEEK_DAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -49,6 +51,9 @@ export default function App() {
   useEffect(() => {
     if (user?.id) {
       getReminders(user.id).then(setReminders);
+      registerForPushNotifications().then(token => {
+        if (token) savePushToken(user.id, token);
+      });
     } else {
       setReminders([]);
     }
