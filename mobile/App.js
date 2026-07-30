@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   SafeAreaView,
   View,
@@ -9,6 +9,7 @@ import {
   Alert,
   StatusBar,
   ActivityIndicator,
+  PanResponder,
 } from 'react-native';
 import { generateCalendarDays, matchesReminder, getLunarDate } from './src/lib/calendar';
 import {
@@ -90,6 +91,17 @@ export default function App() {
     setModalOpen(false);
   }, [refreshReminders]);
 
+  const swipeResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) =>
+        Math.abs(g.dx) > Math.abs(g.dy) && Math.abs(g.dx) > 10,
+      onPanResponderRelease: (_, g) => {
+        if (g.dx < -50) handleNextMonth();
+        else if (g.dx > 50) handlePrevMonth();
+      },
+    })
+  ).current;
+
   const handleSignIn = async () => {
     try {
       await signInWithGoogle();
@@ -104,11 +116,9 @@ export default function App() {
     user?.email?.split('@')[0];
 
   const renderDay = useCallback(({ item: day }) => {
-    if (day.type === 'empty') return <View style={styles.cell} />;
-
     const reminder = reminders.find(r => matchesReminder(r, day));
-    const isRed = day.dayOfWeek === 0 || day.isHoliday;
-    const isBlue = day.dayOfWeek === 6;
+    const isRed = !day.isOtherMonth && (day.dayOfWeek === 0 || day.isHoliday);
+    const isBlue = !day.isOtherMonth && day.dayOfWeek === 6;
 
     return (
       <TouchableOpacity
@@ -118,15 +128,17 @@ export default function App() {
       >
         <Text style={[
           styles.dayNum,
-          isRed ? styles.red : isBlue ? styles.blue : styles.dark,
+          day.isOtherMonth ? styles.otherMonth : isRed ? styles.red : isBlue ? styles.blue : styles.dark,
           day.isToday && styles.todayNum,
         ]}>
           {day.day}
         </Text>
+        {day.holidayName
+          ? <Text style={[styles.lunar, styles.red]} numberOfLines={1}>{day.holidayName}</Text>
+          : <Text style={[styles.lunar, day.isOtherMonth && styles.otherMonth]}>{day.lunarDateStr}</Text>
+        }
         {day.term ? <Text style={styles.term}>{day.term}</Text> : null}
-        {day.holidayName ? <Text style={styles.holiday} numberOfLines={1}>{day.holidayName}</Text> : null}
         {reminder ? <Text style={styles.reminder} numberOfLines={1}>{reminder.title}</Text> : null}
-        <Text style={styles.lunar}>{day.lunarDateStr}</Text>
       </TouchableOpacity>
     );
   }, [reminders, handleDatePress]);
@@ -138,16 +150,20 @@ export default function App() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.navRow}>
-          <TouchableOpacity onPress={handleToday} style={styles.todayBtn}>
-            <Text style={styles.todayBtnText}>오늘</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handlePrevMonth} style={styles.navBtn}>
-            <Text style={styles.navArrow}>‹</Text>
-          </TouchableOpacity>
+          <View style={styles.navSide}>
+            <TouchableOpacity onPress={handleToday} style={styles.todayBtn}>
+              <Text style={styles.todayBtnText}>오늘</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handlePrevMonth} style={styles.navBtn}>
+              <Text style={styles.navArrow}>‹</Text>
+            </TouchableOpacity>
+          </View>
           <Text style={styles.monthLabel}>{monthDisplay}</Text>
-          <TouchableOpacity onPress={handleNextMonth} style={styles.navBtn}>
-            <Text style={styles.navArrow}>›</Text>
-          </TouchableOpacity>
+          <View style={[styles.navSide, styles.navSideRight]}>
+            <TouchableOpacity onPress={handleNextMonth} style={styles.navBtn}>
+              <Text style={styles.navArrow}>›</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.authRow}>
@@ -178,15 +194,16 @@ export default function App() {
       </View>
 
       {/* Calendar grid */}
-      <FlatList
-        data={days}
-        renderItem={renderDay}
-        keyExtractor={item => item.id}
-        numColumns={7}
-        scrollEnabled={false}
-        style={styles.grid}
-        contentContainerStyle={styles.gridContent}
-      />
+      <View style={styles.grid} {...swipeResponder.panHandlers}>
+        <FlatList
+          data={days}
+          renderItem={renderDay}
+          keyExtractor={item => item.id}
+          numColumns={7}
+          scrollEnabled={false}
+          contentContainerStyle={styles.gridContent}
+        />
+      </View>
 
       <AddEventModal
         isOpen={modalOpen}
@@ -215,18 +232,25 @@ const styles = StyleSheet.create({
   navRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+  },
+  navSide: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  navSideRight: {
+    justifyContent: 'flex-end',
   },
   todayBtn: {
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 7,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    marginRight: 4,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   todayBtnText: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#555',
     fontWeight: '500',
   },
@@ -239,7 +263,6 @@ const styles = StyleSheet.create({
     lineHeight: 30,
   },
   monthLabel: {
-    flex: 1,
     textAlign: 'center',
     fontSize: 19,
     fontWeight: '700',
@@ -252,12 +275,12 @@ const styles = StyleSheet.create({
   signInBtn: {
     backgroundColor: '#3b82f6',
     borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
   },
   signInText: {
     color: '#fff',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
   signOutText: {
@@ -275,7 +298,7 @@ const styles = StyleSheet.create({
   weekDay: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
   grid: {
@@ -287,9 +310,9 @@ const styles = StyleSheet.create({
   },
   cell: {
     flex: 1,
-    minHeight: 72,
+    minHeight: 68,
     alignItems: 'center',
-    paddingTop: 5,
+    paddingTop: 6,
     paddingBottom: 4,
     paddingHorizontal: 1,
     margin: 1,
@@ -301,41 +324,41 @@ const styles = StyleSheet.create({
     borderColor: '#fbbf24',
   },
   dayNum: {
-    fontSize: 15,
+    fontSize: 19,
     fontWeight: '700',
   },
   todayNum: {
     color: '#92400e',
   },
   term: {
-    fontSize: 8,
+    fontSize: 9,
     color: '#16a34a',
     fontWeight: '700',
     textAlign: 'center',
     marginTop: 1,
   },
   holiday: {
-    fontSize: 8,
+    fontSize: 10,
     color: '#dc2626',
     textAlign: 'center',
     marginTop: 1,
-    lineHeight: 10,
+    lineHeight: 12,
   },
   reminder: {
-    fontSize: 8,
+    fontSize: 9,
     color: '#2563eb',
     textAlign: 'center',
     marginTop: 1,
-    lineHeight: 10,
+    lineHeight: 11,
   },
   lunar: {
-    fontSize: 9,
-    color: '#d1d5db',
-    marginTop: 'auto',
-    paddingTop: 2,
+    fontSize: 12,
+    color: '#9ca3af',
+    marginTop: 2,
   },
   red: { color: '#dc2626' },
   blue: { color: '#2563eb' },
   dark: { color: '#111827' },
   grayMid: { color: '#6b7280' },
+  otherMonth: { color: '#d1d5db' },
 });
