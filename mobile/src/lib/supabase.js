@@ -83,6 +83,12 @@ export async function deleteReminder(reminderId) {
   return !error;
 }
 
+export async function deleteAccount(userId) {
+  await supabase.from('reminders').delete().eq('user_id', userId);
+  await supabase.from('profiles').delete().eq('id', userId);
+  await supabase.auth.signOut();
+}
+
 export async function savePushToken(userId, token) {
   const { error } = await supabase
     .from('profiles')

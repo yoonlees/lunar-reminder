@@ -11,7 +11,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.kiwishare.lunar",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSUserNotificationsUsageDescription": "Lunar Reminder sends you push notifications to remind you of upcoming events and anniversaries you've saved on the lunar calendar."
       }
     },
     "android": {

@@ -16,6 +16,7 @@ import {
   supabase,
   signInWithGoogle,
   signOut,
+  deleteAccount,
   getReminders,
   saveReminder,
   deleteReminder,
@@ -107,6 +108,17 @@ export default function App() {
     })
   ).current;
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      '계정 삭제',
+      '모든 일정과 계정 정보가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.',
+      [
+        { text: '취소', style: 'cancel' },
+        { text: '삭제', style: 'destructive', onPress: () => deleteAccount(user.id) },
+      ]
+    );
+  };
+
   const handleSignIn = async () => {
     try {
       await signInWithGoogle();
@@ -175,9 +187,14 @@ export default function App() {
           {authLoading ? (
             <ActivityIndicator size="small" color="#3b82f6" />
           ) : user ? (
-            <TouchableOpacity onPress={signOut}>
-              <Text style={styles.signOutText}>{userName} 로그아웃</Text>
-            </TouchableOpacity>
+            <View style={styles.authActions}>
+              <TouchableOpacity onPress={handleDeleteAccount}>
+                <Text style={styles.deleteAccountText}>계정 삭제</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={signOut}>
+                <Text style={styles.signOutText}>{userName} 로그아웃</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             <TouchableOpacity onPress={handleSignIn} style={styles.signInBtn}>
               <Text style={styles.signInText}>Google 로그인</Text>
@@ -287,6 +304,16 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 15,
     fontWeight: '600',
+  },
+  authActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  deleteAccountText: {
+    color: '#9ca3af',
+    fontSize: 12,
+    fontWeight: '400',
   },
   signOutText: {
     color: '#ef4444',
